@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger — Data cleanup and next steps</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+  :root{
+    --ink:#16202B;
+    --paper:#F7F5F1;
+    --surface:#FFFFFF;
+    --slate:#5B6472;
+    --forest:#2E5943;
+    --forest-dark:#213F30;
+    --amber:#B8763B;
+    --line:#DCD7CD;
+    --danger:#9C4433;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    margin:0;
+    padding:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  h1,h2,h3{
+    font-family:'Source Serif 4', serif;
+    font-weight:600;
+    margin:0;
+    color:var(--ink);
+  }
+
+  button{
+    font-family:inherit;
+    cursor:pointer;
+  }
+
+  input, textarea, button{
+    font-size:15px;
+  }
+
+  a{ color:var(--forest); }
+
+  .screen{
+    display:none;
+    min-height:100vh;
+    width:100%;
+  }
+  .screen.active{ display:flex; }
+
+  /* ---------- Screen 1: Login ---------- */
+  #screen-login{
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+
+  .login-box{
+    width:100%;
+    max-width:360px;
+  }
+
+  .brand{
+    margin-bottom:40px;
+  }
+  .brand h1{
+    font-size:28px;
+    letter-spacing:-0.01em;
+  }
+  .brand p{
+    margin:8px 0 0;
+    color:var(--slate);
+    font-size:15px;
+    line-height:1.5;
+  }
+
+  .field{
+    margin-bottom:18px;
+  }
+  .field label{
+    display:block;
+    font-size:13px;
+    color:var(--slate);
+    margin-bottom:6px;
+  }
+  .field input{
+    width:100%;
+    padding:11px 12px;
+    border:1px solid var(--line);
+    border-radius:3px;
+    background:var(--surface);
+    color:var(--ink);
+    outline:none;
+  }
+  .field input:focus{
+    border-color:var(--forest);
+    box-shadow:0 0 0 3px rgba(46,89,67,0.12);
+  }
+
+  .btn-primary{
+    width:100%;
+    padding:12px 16px;
+    background:var(--forest);
+    color:#fff;
+    border:none;
+    border-radius:3px;
+    font-weight:500;
+    margin-top:6px;
+  }
+  .btn-primary:hover{ background:var(--forest-dark); }
+  .btn-primary:focus-visible{
+    outline:2px solid var(--forest-dark);
+    outline-offset:2px;
+  }
+
+  .error-text{
+    color:var(--danger);
+    font-size:13px;
+    margin:10px 0 0;
+    min-height:16px;
+  }
+
+  .hint{
+    margin-top:28px;
+    font-size:13px;
+    color:var(--slate);
+    border-top:1px solid var(--line);
+    padding-top:16px;
+    line-height:1.6;
+  }
+
+  /* ---------- Shared top bar (screens 2 & 3) ---------- */
+  .topbar{
+    border-bottom:1px solid var(--line);
+    padding:18px 32px;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    background:var(--surface);
+  }
+  .topbar .mark{
+    font-family:'Source Serif 4', serif;
+    font-size:19px;
+    font-weight:600;
+  }
+  .topbar .who{
+    font-size:13px;
+    color:var(--slate);
+    display:flex;
+    align-items:center;
+    gap:16px;
+  }
+  .topbar .who button{
+    background:none;
+    border:none;
+    color:var(--slate);
+    text-decoration:underline;
+    padding:0;
+    font-size:13px;
+  }
+  .topbar .who button:hover{ color:var(--ink); }
+
+  .page{
+    max-width:960px;
+    margin:0 auto;
+    padding:48px 32px 80px;
+    width:100%;
+  }
+
+  /* ---------- Screen 2: Data input ---------- */
+  #screen-input .page > h2{
+    font-size:26px;
+    margin-bottom:8px;
+  }
+  #screen-input .page > p.lede{
+    color:var(--slate);
+    max-width:60ch;
+    line-height:1.6;
+    margin:0 0 36px;
+  }
+
+  .input-grid{
+    display:grid;
+    grid-template-columns:1.4fr 1fr;
+    gap:40px;
+    align-items:start;
+  }
+  @media (max-width:720px){
+    .input-grid{ grid-template-columns:1fr; }
+  }
+
+  textarea#csvInput{
+    width:100%;
+    min-height:280px;
+    padding:16px;
+    border:1px solid var(--line);
+    border-radius:3px;
+    background:var(--surface);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:13.5px;
+    line-height:1.6;
+    resize:vertical;
+    outline:none;
+  }
+  textarea#csvInput:focus{
+    border-color:var(--forest);
+    box-shadow:0 0 0 3px rgba(46,89,67,0.12);
+  }
+
+  .upload-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-top:14px;
+  }
+  .upload-row label.file-btn{
+    border:1px solid var(--line);
+    background:var(--surface);
+    padding:8px 14px;
+    border-radius:3px;
+    font-size:13px;
+    color:var(--ink);
+  }
+  .upload-row label.file-btn:hover{ border-color:var(--forest); }
+  .upload-row input[type="file"]{ display:none; }
+  .upload-row .filename{
+    font-size:13px;
+    color:var(--slate);
+  }
+
+  .side-note{
+    border-left:2px solid var(--line);
+    padding-left:20px;
+  }
+  .side-note h3{
+    font-size:15px;
+    margin-bottom:10px;
+  }
+  .side-note ol{
+    margin:0;
+    padding-left:18px;
+    color:var(--slate);
+    font-size:14px;
+    line-height:1.9;
+  }
+  .side-note ol li b{ color:var(--ink); font-weight:500; }
+
+  .action-row{
+    margin-top:28px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+  }
+  .btn-forest{
+    padding:12px 22px;
+    background:var(--forest);
+    color:#fff;
+    border:none;
+    border-radius:3px;
+    font-weight:500;
+  }
+  .btn-forest:hover{ background:var(--forest-dark); }
+  .btn-forest:disabled{
+    background:#A9B3AC;
+    cursor:not-allowed;
+  }
+  .input-error{
+    color:var(--danger);
+    font-size:13px;
+  }
+
+  /* ---------- Screen 3: Output ---------- */
+  #screen-output .page > .report-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    border-bottom:1px solid var(--line);
+    padding-bottom:20px;
+    margin-bottom:32px;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  #screen-output .report-head h2{
+    font-size:26px;
+  }
+  #screen-output .report-head .timestamp{
+    color:var(--slate);
+    font-size:13px;
+  }
+
+  .stat-row{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    margin-bottom:36px;
+  }
+  @media (max-width:640px){
+    .stat-row{ grid-template-columns:repeat(2, 1fr); }
+  }
+  .stat{
+    background:var(--surface);
+    padding:18px 20px;
+  }
+  .stat .num{
+    font-family:'Source Serif 4', serif;
+    font-size:28px;
+    font-weight:600;
+    line-height:1;
+  }
+  .stat .label{
+    margin-top:8px;
+    font-size:12.5px;
+    color:var(--slate);
+  }
+
+  .section-title{
+    font-size:13px;
+    color:var(--slate);
+    margin:0 0 14px;
+    padding-top:6px;
+  }
+
+  .insight-block{
+    border-left:3px solid var(--amber);
+    background:#FBF3EA;
+    padding:20px 24px;
+    margin-bottom:40px;
+  }
+  .insight-block h3{
+    font-size:17px;
+    margin-bottom:8px;
+    color:var(--ink);
+  }
+  .insight-block p{
+    margin:0 0 10px;
+    line-height:1.65;
+    color:#3E2E1F;
+    font-size:14.5px;
+  }
+  .insight-block p:last-child{ margin-bottom:0; }
+  .insight-block .flag{
+    display:inline-block;
+    font-size:12.5px;
+    color:var(--amber);
+    margin-right:8px;
+  }
+
+  .table-wrap{
+    overflow-x:auto;
+    border:1px solid var(--line);
+    margin-bottom:36px;
+  }
+  table.data-table{
+    border-collapse:collapse;
+    width:100%;
+    font-size:13px;
+    min-width:480px;
+  }
+  table.data-table th, table.data-table td{
+    padding:9px 14px;
+    border-bottom:1px solid var(--line);
+    text-align:left;
+    white-space:nowrap;
+  }
+  table.data-table th{
+    background:var(--surface);
+    font-weight:600;
+    color:var(--ink);
+    border-bottom:1px solid var(--ink);
+  }
+  table.data-table tbody tr:nth-child(even){
+    background:#FBFAF8;
+  }
+  .table-note{
+    font-size:12.5px;
+    color:var(--slate);
+    margin:-24px 0 36px;
+  }
+
+  .output-actions{
+    border-top:1px solid var(--line);
+    padding-top:24px;
+    display:flex;
+    gap:14px;
+  }
+  .btn-outline{
+    padding:10px 18px;
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:3px;
+    color:var(--ink);
+    font-weight:500;
+  }
+  .btn-outline:hover{ border-color:var(--ink); }
+
+  .empty-state{
+    color:var(--slate);
+    font-size:14px;
+    padding:20px 0;
+  }
+
+  :focus-visible{
+    outline:2px solid var(--forest);
+    outline-offset:2px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ Screen 1: Login ============ -->
+<div id="screen-login" class="screen active">
+  <div class="login-box">
+    <div class="brand">
+      <h1>Ledger</h1>
+      <p>Clean up messy business data and see what to do next.</p>
+    </div>
+
+    <form id="loginForm" novalidate>
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" type="email" autocomplete="email" placeholder="you@business.com" required>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn-primary">Log in</button>
+      <p class="error-text" id="loginError"></p>
+    </form>
+
+    <div class="hint">
+      This is a working demo — any email and password (6+ characters) will log you in. No account is created or stored anywhere.
+    </div>
+  </div>
+</div>
+
+<!-- ============ Screen 2: Data Input ============ -->
+<div id="screen-input" class="screen">
+  <div style="width:100%;">
+    <div class="topbar">
+      <div class="mark">Ledger</div>
+      <div class="who">
+        <span id="userEmailLabel"></span>
+        <button id="logoutBtn1" type="button">Log out</button>
+      </div>
+    </div>
+
+    <div class="page">
+      <h2>Bring in your data</h2>
+      <p class="lede">Paste a CSV, or upload a file. Ledger will remove blank and duplicate rows, flag gaps, and surface one clear next step.</p>
+
+      <div class="input-grid">
+        <div>
+          <textarea id="csvInput" placeholder="name,category,revenue,month&#10;Acme Co,Retail,4200,Jan&#10;Beacon Ltd,Services,,Jan&#10;..."></textarea>
+          <div class="upload-row">
+            <label class="file-btn" for="fileInput">Upload CSV file</label>
+            <input id="fileInput" type="file" accept=".csv,text/csv">
+            <span class="filename" id="fileName"></span>
+          </div>
+          <div class="action-row">
+            <button id="analyzeBtn" class="btn-forest" type="button">Clean and analyze</button>
+            <span class="input-error" id="inputError"></span>
+          </div>
+        </div>
+
+        <div class="side-note">
+          <h3>What Ledger does with it</h3>
+          <ol>
+            <li><b>Cleans</b> — trims stray spaces, drops empty rows, removes exact duplicates.</li>
+            <li><b>Checks</b> — counts missing values per column.</li>
+            <li><b>Recommends</b> — points to the single next step your data suggests, based on what stands out.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Screen 3: Output & Insights ============ -->
+<div id="screen-output" class="screen">
+  <div style="width:100%;">
+    <div class="topbar">
+      <div class="mark">Ledger</div>
+      <div class="who">
+        <span id="userEmailLabel2"></span>
+        <button id="logoutBtn2" type="button">Log out</button>
+      </div>
+    </div>
+
+    <div class="page">
+      <div class="report-head">
+        <h2>Your report</h2>
+        <span class="timestamp" id="reportTimestamp"></span>
+      </div>
+
+      <div class="stat-row" id="statRow"></div>
+
+      <div class="insight-block" id="insightBlock"></div>
+
+      <p class="section-title">Cleaned data</p>
+      <div class="table-wrap" id="tableWrap"></div>
+      <p class="table-note" id="tableNote"></p>
+
+      <div class="output-actions">
+        <button class="btn-outline" id="backBtn" type="button">Analyze different data</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var state = { email: '', rawRows: [], headers: [], cleanRows: [], removedBlank: 0, removedDup: 0 };
+
+  function show(id){
+    document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+    document.getElementById(id).classList.add('active');
+  }
+
+  // ---------- Screen 1: Login ----------
+  var loginForm = document.getElementById('loginForm');
+  var loginError = document.getElementById('loginError');
+
+  loginForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var email = document.getElementById('email').value.trim();
+    var password = document.getElementById('password').value;
+    var emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    if(!emailOk){
+      loginError.textContent = 'Enter a valid email address.';
+      return;
+    }
+    if(password.length < 6){
+      loginError.textContent = 'Password must be at least 6 characters.';
+      return;
+    }
+    loginError.textContent = '';
+    state.email = email;
+    document.getElementById('userEmailLabel').textContent = email;
+    document.getElementById('userEmailLabel2').textContent = email;
+    show('screen-input');
+  });
+
+  function logout(){
+    state = { email: '', rawRows: [], headers: [], cleanRows: [], removedBlank: 0, removedDup: 0 };
+    loginForm.reset();
+    loginError.textContent = '';
+    document.getElementById('csvInput').value = '';
+    document.getElementById('fileName').textContent = '';
+    document.getElementById('inputError').textContent = '';
+    show('screen-login');
+  }
+  document.getElementById('logoutBtn1').addEventListener('click', logout);
+  document.getElementById('logoutBtn2').addEventListener('click', logout);
+
+  // ---------- Screen 2: Data input ----------
+  var fileInput = document.getElementById('fileInput');
+  var csvInput = document.getElementById('csvInput');
+  var fileName = document.getElementById('fileName');
+  var inputError = document.getElementById('inputError');
+
+  fileInput.addEventListener('change', function(){
+    var file = fileInput.files[0];
+    if(!file) return;
+    fileName.textContent = file.name;
+    var reader = new FileReader();
+    reader.onload = function(e){ csvInput.value = e.target.result; };
+    reader.onerror = function(){ inputError.textContent = 'Could not read that file. Try pasting the data instead.'; };
+    reader.readAsText(file);
+  });
+
+  function parseCSV(text){
+    var lines = text.replace(/\r\n/g, '\n').split('\n');
+    var rows = lines.map(function(line){
+      return line.split(',').map(function(cell){ return cell.trim(); });
+    });
+    // drop fully-empty lines
+    rows = rows.filter(function(r){ return r.some(function(c){ return c !== ''; }); });
+    return rows;
+  }
+
+  document.getElementById('analyzeBtn').addEventListener('click', function(){
+    inputError.textContent = '';
+    var text = csvInput.value.trim();
+    if(!text){
+      inputError.textContent = 'Paste some CSV data or upload a file first.';
+      return;
+    }
+    var rows = parseCSV(text);
+    if(rows.length < 2){
+      inputError.textContent = 'Add at least a header row and one data row.';
+      return;
+    }
+
+    var headers = rows[0];
+    var dataRows = rows.slice(1);
+    var totalIncoming = dataRows.length;
+
+    // remove rows that are entirely blank across all columns
+    var nonBlank = dataRows.filter(function(r){ return r.some(function(c){ return c !== ''; }); });
+    var removedBlank = totalIncoming - nonBlank.length;
+
+    // remove exact duplicate rows
+    var seen = {};
+    var deduped = [];
+    nonBlank.forEach(function(r){
+      var key = r.join('||');
+      if(!seen[key]){ seen[key] = true; deduped.push(r); }
+    });
+    var removedDup = nonBlank.length - deduped.length;
+
+    // normalize row length to header length
+    deduped = deduped.map(function(r){
+      var row = r.slice(0, headers.length);
+      while(row.length < headers.length) row.push('');
+      return row;
+    });
+
+    state.headers = headers;
+    state.cleanRows = deduped;
+    state.removedBlank = removedBlank;
+    state.removedDup = removedDup;
+    state.totalIncoming = totalIncoming;
+
+    renderOutput();
+    show('screen-output');
+  });
+
+  document.getElementById('backBtn').addEventListener('click', function(){
+    show('screen-input');
+  });
+
+  // ---------- Screen 3: Output & insights ----------
+  function isNumeric(val){
+    if(val === '' || val === null || val === undefined) return false;
+    return !isNaN(Number(val.replace(/[$,]/g, '')));
+  }
+
+  function toNumber(val){
+    return Number(val.replace(/[$,]/g, ''));
+  }
+
+  function analyzeColumns(headers, rows){
+    return headers.map(function(h, colIdx){
+      var values = rows.map(function(r){ return r[colIdx]; });
+      var missing = values.filter(function(v){ return v === '' || v === undefined; }).length;
+      var nonEmpty = values.filter(function(v){ return v !== '' && v !== undefined; });
+      var numericCount = nonEmpty.filter(isNumeric).length;
+      var isNumericCol = nonEmpty.length > 0 && (numericCount / nonEmpty.length) >= 0.8;
+      return { name: h, index: colIdx, missing: missing, isNumeric: isNumericCol, values: values };
+    });
+  }
+
+  function buildInsight(headers, rows, columns){
+    var totalCells = headers.length * rows.length;
+    var totalMissing = columns.reduce(function(sum, c){ return sum + c.missing; }, 0);
+    var worstCol = columns.slice().filter(function(c){ return c.missing > 0; })
+      .sort(function(a,b){ return b.missing - a.missing; })[0];
+
+    var numericCols = columns.filter(function(c){ return c.isNumeric; });
+    var categoryCol = columns.find(function(c){ return !c.isNumeric && c.missing < rows.length; });
+
+    var lines = [];
+    var title = 'Keep an eye on data quality';
+    var flag = 'Data quality';
+
+    if(worstCol && (worstCol.missing / rows.length) > 0.2){
+      lines.push('The "' + worstCol.name + '" column is missing ' + worstCol.missing + ' of ' + rows.length + ' values (' + Math.round((worstCol.missing/rows.length)*100) + '%). Insights that depend on this column will be less reliable until it is filled in.');
+    } else if(totalMissing === 0){
+      lines.push('No missing values were found after cleanup — this dataset is in good shape to build on.');
+    } else {
+      lines.push(totalMissing + ' cell' + (totalMissing === 1 ? '' : 's') + ' across the dataset are missing, but no single column stands out as a problem.');
+    }
+
+    if(numericCols.length > 0 && categoryCol){
+      var numCol = numericCols[0];
+      var totals = {};
+      rows.forEach(function(r){
+        var cat = r[categoryCol.index] || '(blank)';
+        var val = r[numCol.index];
+        if(isNumeric(val)){
+          totals[cat] = (totals[cat] || 0) + toNumber(val);
+        }
+      });
+      var entries = Object.keys(totals).map(function(k){ return [k, totals[k]]; });
+      if(entries.length > 1){
+        entries.sort(function(a,b){ return b[1]-a[1]; });
+        var top = entries[0];
+        var bottom = entries[entries.length-1];
+        title = 'Double down on "' + top[0] + '"';
+        flag = 'Recommended next step';
+        lines.push('By "' + categoryCol.name + '", "' + top[0] + '" leads on ' + numCol.name + ' with a total of ' + top[1].toLocaleString() + ', while "' + bottom[0] + '" trails at ' + bottom[1].toLocaleString() + '. Consider putting more resources behind ' + top[0] + ' and reviewing why ' + bottom[0] + ' is underperforming.');
+      } else if(entries.length === 1){
+        title = 'One category dominates the data';
+        flag = 'Recommended next step';
+        lines.push('Every row falls under "' + entries[0][0] + '" for ' + categoryCol.name + '. Bringing in data from other categories would make this report more useful for comparison.');
+      }
+    } else if(numericCols.length > 0){
+      var col = numericCols[0];
+      var vals = rows.map(function(r){ return r[col.index]; }).filter(isNumeric).map(toNumber);
+      if(vals.length){
+        var sum = vals.reduce(function(a,b){ return a+b; }, 0);
+        var avg = sum / vals.length;
+        title = 'Review your ' + col.name + ' trend';
+        flag = 'Recommended next step';
+        lines.push('Across ' + vals.length + ' rows, ' + col.name + ' totals ' + sum.toLocaleString() + ' with an average of ' + avg.toFixed(2) + '. Add a category or date column next time to see where that number is coming from.');
+      }
+    } else {
+      lines.push('Add at least one numeric column (like revenue, units, or cost) so Ledger can point to a specific next step rather than a general data-quality note.');
+    }
+
+    return { title: title, flag: flag, lines: lines };
+  }
+
+  function renderOutput(){
+    var headers = state.headers;
+    var rows = state.cleanRows;
+    var columns = analyzeColumns(headers, rows);
+
+    document.getElementById('reportTimestamp').textContent = new Date().toLocaleString();
+
+    // stats
+    var totalMissing = columns.reduce(function(s,c){ return s + c.missing; }, 0);
+    var stats = [
+      { num: state.totalIncoming, label: 'Rows received' },
+      { num: rows.length, label: 'Rows after cleanup' },
+      { num: (state.removedBlank + state.removedDup), label: 'Rows removed' },
+      { num: totalMissing, label: 'Missing values remaining' }
+    ];
+    var statRow = document.getElementById('statRow');
+    statRow.innerHTML = '';
+    stats.forEach(function(s){
+      var div = document.createElement('div');
+      div.className = 'stat';
+      div.innerHTML = '<div class="num">' + s.num + '</div><div class="label">' + s.label + '</div>';
+      statRow.appendChild(div);
+    });
+
+    // insight
+    var insight = buildInsight(headers, rows, columns);
+    var block = document.getElementById('insightBlock');
+    block.innerHTML = '<span class="flag">' + insight.flag + '</span><h3>' + insight.title + '</h3>' +
+      insight.lines.map(function(l){ return '<p>' + l + '</p>'; }).join('');
+
+    // table
+    var wrap = document.getElementById('tableWrap');
+    if(rows.length === 0){
+      wrap.innerHTML = '<div class="empty-state">Nothing left after cleanup — check your original data.</div>';
+      document.getElementById('tableNote').textContent = '';
+    } else {
+      var maxShow = 50;
+      var shown = rows.slice(0, maxShow);
+      var html = '<table class="data-table"><thead><tr>' +
+        headers.map(function(h){ return '<th>' + escapeHtml(h) + '</th>'; }).join('') +
+        '</tr></thead><tbody>';
+      shown.forEach(function(r){
+        html += '<tr>' + r.map(function(c){ return '<td>' + (c === '' ? '<span style="color:#B0AA9E;">—</span>' : escapeHtml(c)) + '</td>'; }).join('') + '</tr>';
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+      document.getElementById('tableNote').textContent = rows.length > maxShow
+        ? ('Showing the first ' + maxShow + ' of ' + rows.length + ' cleaned rows.')
+        : ('Removed ' + state.removedBlank + ' blank row(s) and ' + state.removedDup + ' duplicate row(s).');
+    }
+  }
+
+  function escapeHtml(str){
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+})();
+</script>
+
+</body>
+</html>
